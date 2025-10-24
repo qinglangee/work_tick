@@ -2,3 +2,5 @@ target/
 *.mp3
 cargo.lock
 *.py
+
+__pycache__/
