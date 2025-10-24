@@ -7,6 +7,10 @@ edition = "2021"
 
 [dependencies]
 slint = "1.12.1"
+rodio = "0.17.3"
+rand = "0.8.5"
+chrono = "0.4.31"
+anyhow = "1.0.75"
 
 [build-dependencies]
 slint-build = "1.12.1"
