@@ -9,9 +9,9 @@ use anyhow::Result;
 
 pub struct ClassTicker {
     running: bool,
-    class_time: u64,    // 默认 90 分钟（5400秒）
-    rest_time: u64,     // 默认休息 20 分钟（1200秒）
-    elapsed_time: u64,
+    pub class_time: u64,    // 默认 90 分钟（5400秒）
+    pub rest_time: u64,     // 默认休息 20 分钟（1200秒）
+    pub elapsed_time: u64,
     start_time: Instant,
     end_time: DateTime<Local>,
 }

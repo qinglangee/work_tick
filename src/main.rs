@@ -2,22 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use slint_rust_template::ClassTicker;
-use std::error::Error;
+use std::{error::Error, sync::{Arc, Mutex}, str::FromStr, thread, time::Duration};
+use slint::SharedString;
 
 slint::include_modules!();
 
+
 fn main() -> Result<(), Box<dyn Error>> {
-    // 创建课程计时器实例
-    let mut ticker = ClassTicker::new();
-    
-    // 在新线程中运行计时器
-    std::thread::spawn(move || {
-        ticker.start_tick();
-    });
-
-    // 创建并运行UI
-    let ui = AppWindow::new()?;
-    ui.run()?;
-
     Ok(())
 }

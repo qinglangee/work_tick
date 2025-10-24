@@ -1,18 +1,111 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, LineEdit, HorizontalBox } from "std-widgets.slint";
+
+export struct TickerInfo {
+    class-time: string,
+    elapsed-time: string,
+    rest-time: string,
+}
+
+component LabeledInput {
+    in property <string> label;
+    in property <string> value;
+    in property <string> button-text;
+    callback on-submit(string);
+
+    HorizontalBox {
+        padding: 5px;
+        spacing: 10px;
+        alignment: end;
+        Text {
+            text: root.label;
+            vertical-alignment: center;
+        }
+        input := LineEdit {
+            text: root.value;
+            width: 80px;
+        }
+        Button {
+            text: root.button-text;
+            clicked => {
+                if (input.text != "") {
+                    root.on-submit(input.text);
+                }
+            }
+        }
+    }
+}
 
 export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    callback request-increase-value();
+    title: "课程计时器";
+    width: 360px;
+    height: 300px;
+
+    callback set-class-time(string);
+    callback set-elapsed-time(string);
+    callback set-rest-time(string);
+    callback start-tick();
+    callback resume-tick();
+    callback stop-tick();
+
+    in property <TickerInfo> ticker-info: {
+        class-time: "5400",
+        elapsed-time: "0",
+        rest-time: "1200",
+    };
+
+    in-out property <string> message;
+
     VerticalBox {
-        Text {
-            text: "Counter: \{root.counter}";
+        padding: 16px;
+        spacing: 10px;
+
+        LabeledInput {
+            label: "一节课时(秒)：";
+            value: root.ticker-info.class-time;
+            button-text: "设置课时";
+            on-submit(value) => {
+                root.set-class-time(value);
+            }
         }
 
-        Button {
-            text: "Increase value";
-            clicked => {
-                root.request-increase-value();
+        LabeledInput {
+            label: "已学时间(秒)：";
+            value: root.ticker-info.elapsed-time;
+            button-text: "设置时间";
+            on-submit(value) => {
+                root.set-elapsed-time(value);
             }
+        }
+
+        LabeledInput {
+            label: "休息时间(秒)：";
+            value: root.ticker-info.rest-time;
+            button-text: "设置时间";
+            on-submit(value) => {
+                root.set-rest-time(value);
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            alignment: center;
+            Button {
+                text: "继续 Tick";
+                clicked => { root.resume-tick(); }
+            }
+            Button {
+                text: "开启 Tick";
+                clicked => { root.start-tick(); }
+            }
+            Button {
+                text: "停止 Tick";
+                clicked => { root.stop-tick(); }
+            }
+        }
+
+        Text {
+            text: root.message;
+            horizontal-alignment: center;
         }
     }
 }
