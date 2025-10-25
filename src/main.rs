@@ -3,7 +3,6 @@
 use slint_rust_template::ClassTicker;
 use std::{error::Error, sync::{Arc}, str::FromStr, thread, time::Duration};
 use slint::SharedString;
-use chrono::Local;
 
 slint::include_modules!();
 
@@ -41,10 +40,11 @@ impl TickerHandler {
         let class_time_val = *t.class_time.lock().unwrap();
         let elapsed_val = *t.elapsed_time.lock().unwrap();
         let rest_time_val = *t.rest_time.lock().unwrap();
+        let end_time = *t.end_time.lock().unwrap();
+        // Local::now() + chrono::Duration::seconds((class_time_val - elapsed_val) as i64);
 
 
         // Update message with current status
-        let end_time = Local::now() + chrono::Duration::seconds((class_time_val - elapsed_val) as i64);
         let next_start = end_time + chrono::Duration::seconds(rest_time_val as i64);
 
         let msg = format!(
@@ -69,6 +69,7 @@ impl TickerHandler {
     where
         F: FnOnce(& ClassTicker, u64)
     {
+        println!("Handling time input for {}: {}", field, value);
         if let Ok(time) = u64::from_str(&value) {
             f(&self.ticker, time);
             self.show_message(format!("已设置{}为 {} 秒", field, time));

@@ -18,7 +18,7 @@ pub struct ClassTicker {
     pub rest_time: Mutex<u64>,     // 默认休息 20 分钟（1200秒）
     pub elapsed_time: Mutex<u64>,
     start_time: Mutex<Instant>,
-    end_time: Mutex<DateTime<Local>>,
+    pub end_time: Mutex<DateTime<Local>>,
 }
 
 impl ClassTicker {
@@ -33,6 +33,9 @@ impl ClassTicker {
         }
     }
 
+    /// 以 100 毫秒为单位，分段睡眠，并在每个时间片更新 elapsed_time
+    /// 在睡眠过程中，如果 elapsed_time 超过 class_time 或者 running 变为 false，则提前结束睡眠
+    /// 
     fn sleep(& self, sleep_time: u64) {
         let mut past_time = 0;
         let sleep_step = Duration::from_millis(100);
@@ -44,12 +47,15 @@ impl ClassTicker {
             *self.elapsed_time.lock().unwrap() = elapsed_secs;
             past_time += 1;
 
-            if !*self.running.lock().unwrap() {
+            let total = *self.class_time.lock().unwrap();
+            if elapsed_secs > total || !*self.running.lock().unwrap() {
                 break;
             }
 
+            let rest = self.rest_time.lock().unwrap();
             if past_time % 20 == 0 {
-                println!("past time: {}, elapsed_time: {}", past_time / 10, elapsed_secs);
+                println!("past time: {}, elapsed_time: {}, total: {}, rest: {}"
+                , past_time / 10, elapsed_secs, total, *rest);
             }
         }
     }
@@ -151,11 +157,13 @@ impl ClassTicker {
                 rest_second
             );
 
-            self.sleep(rest_time);
-
+            // 重新初始化计时， 因为 elapsed_time 超过 class_time 会阻止 sleep()
             if *self.running.lock().unwrap() && *self.elapsed_time.lock().unwrap() >= *self.class_time.lock().unwrap() {
                 self.init_tick();
             }
+            println!("休息时间 001: {} ", Local::now());
+            self.sleep(rest_time);
+            println!("休息时间 002: {} ", Local::now());
         }
         println!("本次课程循环结束。");
     }
