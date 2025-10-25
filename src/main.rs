@@ -2,7 +2,8 @@
 
 use work_tick::ClassTicker;
 use std::{error::Error, sync::{Arc}, str::FromStr, thread, time::Duration};
-use slint::SharedString;
+use slint::{LogicalPosition, SharedString};
+use slint::WindowPosition;
 
 slint::include_modules!();
 
@@ -168,12 +169,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     handler.setup_callbacks(&ui);
     handler.start_ui_update();
 
-    // thread::spawn(move || {
-    //         loop {
-    //             handler.update_ui();
-    //             thread::sleep(Duration::from_millis(100));
-    //         }
-    //     });
+    let win = ui.window();
+    let window_size = win.size();
+    // compute centered position explicitly as i32 so the Into<WindowPosition> impl is unambiguous
+    let x = (2170f32 - window_size.width as f32) / 2.0;
+    let y = (1080f32 - window_size.height as f32) / 2.0;
+    // let pos: WindowPosition = WindowPosition::Logical(WindowPosition::LogicalPosition::new((x, y)));
+    // (x, y).into();
+
+    win.set_position(WindowPosition::Logical(LogicalPosition::new(x, y)));
+
     ui.invoke_start_tick();
 
     // Run UI
