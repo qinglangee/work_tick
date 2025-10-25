@@ -83,6 +83,9 @@ impl ClassTicker {
         sink.append(source);
         sink.play();
         sink.sleep_until_end();
+        // std::thread::spawn(move || {
+        //     sink.sleep_until_end(); // 让它自己在后台阻塞播放
+        // });
 
         Ok(())
     }
@@ -158,9 +161,7 @@ impl ClassTicker {
             );
 
             // 重新初始化计时， 因为 elapsed_time 超过 class_time 会阻止 sleep()
-            if *self.running.lock().unwrap() && *self.elapsed_time.lock().unwrap() >= *self.class_time.lock().unwrap() {
-                self.init_tick();
-            }
+            self.init_tick();
             println!("休息时间 001: {} ", Local::now());
             self.sleep(rest_time);
             println!("休息时间 002: {} ", Local::now());

@@ -168,6 +168,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     handler.setup_callbacks(&ui);
     handler.start_ui_update();
 
+    // thread::spawn(move || {
+    //         loop {
+    //             handler.update_ui();
+    //             thread::sleep(Duration::from_millis(100));
+    //         }
+    //     });
+    ui.invoke_start_tick();
+
     // Run UI
     ui.run()?;
 
