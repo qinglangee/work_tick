@@ -119,7 +119,7 @@ impl ClassTicker {
 
         while *self.running.lock().unwrap() {
             println!("开始新一轮循环...");
-            if let Err(e) = self.play_sound("alert.mp3") {
+            if let Err(e) = self.play_sound("class_work.mp3") {
                 eprintln!("播放开始音频失败: {}", e);
             }
 

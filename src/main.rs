@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use slint_rust_template::ClassTicker;
+use work_tick::ClassTicker;
 use std::{error::Error, sync::{Arc}, str::FromStr, thread, time::Duration};
 use slint::SharedString;
 
