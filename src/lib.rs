@@ -50,8 +50,11 @@ impl ClassTicker {
             *self.elapsed_time.lock().unwrap() = elapsed_secs;
             past_time += 1;
 
-            let total = *self.class_time.lock().unwrap();
-            if elapsed_secs > total || !*self.running.lock().unwrap() {
+            let total = *self.class_time.lock().unwrap() + *self.rest_time.lock().unwrap();
+            if elapsed_secs > total { // 设置很小的 total, 测试时候用的， 尽快结束 sleep
+                break;
+            }
+            if !*self.running.lock().unwrap() {
                 break;
             }
 
@@ -152,11 +155,16 @@ impl ClassTicker {
                 rest_second
             );
 
-            // 重新初始化计时， 因为 elapsed_time 超过 class_time 会阻止 sleep()
-            self.init_tick();
             println!("休息时间 001: {} ", Local::now());
+            // class_time 时间很短的话，elapsed_time 超过 class_time 会阻止 sleep()
+            // 这种情况只在测试时出现， 所以就这样吧， 没什么问题
             self.sleep(rest_time);
             println!("休息时间 002: {} ", Local::now());
+            
+            // 满足条件再初始化， 避免 stop 时初始化 elapsed_time, 就没法继续 Tick 了
+            if *self.running.lock().unwrap() && *self.elapsed_time.lock().unwrap() >= *self.class_time.lock().unwrap() {
+                self.init_tick();
+            }
         }
         println!("本次课程循环结束。");
     }
