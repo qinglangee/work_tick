@@ -77,20 +77,7 @@ impl ClassTicker {
         if !*self.running.lock().unwrap() {
             return Ok(());
         }
-
         self.player.play(file_path);
-
-        // let file_path = file_path.to_string();
-        // let sound_thread = std::thread::spawn(move || {
-        //     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-        //     let file = BufReader::new(File::open(file_path).unwrap());
-        //     let source = Decoder::new(file).unwrap();
-        //     let sink = Sink::try_new(&stream_handle).unwrap();
-    
-        //     sink.append(source);
-        //     sink.play();
-        //     sink.sleep_until_end(); // 让它自己在后台阻塞播放
-        // });
 
         Ok(())
     }

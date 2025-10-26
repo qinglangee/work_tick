@@ -7,8 +7,10 @@ use std::{
     time::Duration,
 };
 
+use crate::success;
+
 #[derive(Debug)]
-enum PlayerCommand {
+pub enum PlayerCommand {
     Pause,
     Resume,
     Stop,
@@ -93,26 +95,13 @@ impl AudioPlayer {
 
     
     pub fn pause(&self) {
-        self.command_sender.lock().unwrap().send(PlayerCommand::Pause).unwrap();
+        success::lock_send(&self.command_sender, PlayerCommand::Pause);
     }
 
     pub fn resume(&self) {
-        self.command_sender.lock().unwrap().send(PlayerCommand::Resume).unwrap();
+        success::lock_send(&self.command_sender, PlayerCommand::Resume);
     }
-
     pub fn stop(& self) {
-        match self.command_sender.lock() {
-            Ok(sender) => {
-                match sender.send(PlayerCommand::Stop) {
-                    Ok(_) => {},
-                    Err(e) => {
-                        eprintln!("Failed to send Stop command: {}", e);
-                    }
-                }
-            },
-            Err(e) => {
-                eprintln!("Failed to acquire command_sender lock: {}", e);
-            }
-        }
+        success::lock_send(&self.command_sender, PlayerCommand::Stop);
     }
 }
