@@ -1,13 +1,14 @@
 use std::time::{Duration, Instant};
 use std::thread;
-use rodio::{Decoder, OutputStream, Sink};
-use std::fs::File;
-use std::io::BufReader;
 use rand::Rng;
 use chrono::{DateTime, Local, Duration as ChronoDuration};
 use anyhow::Result;
 use std::sync::Mutex;
 
+use crate::audio_player::AudioPlayer;
+
+pub mod audio_player;
+pub mod success;
 
 /// adfdf
 /// fdfd
@@ -19,6 +20,7 @@ pub struct ClassTicker {
     pub elapsed_time: Mutex<u64>,
     start_time: Mutex<Instant>,
     pub end_time: Mutex<DateTime<Local>>,
+    player: AudioPlayer,
 }
 
 impl ClassTicker {
@@ -30,6 +32,7 @@ impl ClassTicker {
             elapsed_time: Mutex::new(0),
             start_time: Mutex::new(Instant::now()),
             end_time: Mutex::new(Local::now()),
+            player: AudioPlayer::new(),
         }
     }
 
@@ -75,17 +78,19 @@ impl ClassTicker {
             return Ok(());
         }
 
-        let file_path = file_path.to_string();
-        let sound_thread = std::thread::spawn(move || {
-            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-            let file = BufReader::new(File::open(file_path).unwrap());
-            let source = Decoder::new(file).unwrap();
-            let sink = Sink::try_new(&stream_handle).unwrap();
+        self.player.play(file_path);
+
+        // let file_path = file_path.to_string();
+        // let sound_thread = std::thread::spawn(move || {
+        //     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        //     let file = BufReader::new(File::open(file_path).unwrap());
+        //     let source = Decoder::new(file).unwrap();
+        //     let sink = Sink::try_new(&stream_handle).unwrap();
     
-            sink.append(source);
-            sink.play();
-            sink.sleep_until_end(); // 让它自己在后台阻塞播放
-        });
+        //     sink.append(source);
+        //     sink.play();
+        //     sink.sleep_until_end(); // 让它自己在后台阻塞播放
+        // });
 
         Ok(())
     }
@@ -171,6 +176,7 @@ impl ClassTicker {
 
     pub fn stop(& self) {
         *self.running.lock().unwrap() = false;
+        self.player.stop();
     }
 
     pub fn set_elapsed(& self, elapsed_time: u64) {
