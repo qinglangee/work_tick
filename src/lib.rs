@@ -75,17 +75,17 @@ impl ClassTicker {
             return Ok(());
         }
 
-        let (_stream, stream_handle) = OutputStream::try_default()?;
-        let file = BufReader::new(File::open(file_path)?);
-        let source = Decoder::new(file)?;
-        let sink = Sink::try_new(&stream_handle)?;
-
-        sink.append(source);
-        sink.play();
-        sink.sleep_until_end();
-        // std::thread::spawn(move || {
-        //     sink.sleep_until_end(); // 让它自己在后台阻塞播放
-        // });
+        let file_path = file_path.to_string();
+        let sound_thread = std::thread::spawn(move || {
+            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+            let file = BufReader::new(File::open(file_path).unwrap());
+            let source = Decoder::new(file).unwrap();
+            let sink = Sink::try_new(&stream_handle).unwrap();
+    
+            sink.append(source);
+            sink.play();
+            sink.sleep_until_end(); // 让它自己在后台阻塞播放
+        });
 
         Ok(())
     }
