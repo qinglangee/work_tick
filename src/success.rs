@@ -27,11 +27,9 @@ where
 
 
 pub fn send(sender: &Sender<PlayerCommand>, cmd: PlayerCommand) {
-    match sender.send(cmd) {
-        Ok(_) => {},
-        Err(e) => {
-            eprintln!("Failed to send command: {}", e);
-        }
+    // match 两分支的另一种写法
+    if let Err(e) = sender.send(cmd) {
+        eprintln!("Ignored: failed to send command: {}", e);
     }
 }
 
