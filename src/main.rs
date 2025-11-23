@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use work_tick::ClassTicker;
-use std::{error::Error, sync::{Arc}, str::FromStr, thread, time::Duration};
-use slint::{LogicalPosition, SharedString};
 use slint::WindowPosition;
+use slint::{LogicalPosition, SharedString};
+use std::{error::Error, str::FromStr, sync::Arc, thread, time::Duration};
+use work_tick::ClassTicker;
 
 slint::include_modules!();
 
@@ -44,31 +44,31 @@ impl TickerHandler {
         let end_time = *t.end_time.lock().unwrap();
         // Local::now() + chrono::Duration::seconds((class_time_val - elapsed_val) as i64);
 
-
         // Update message with current status
         let next_start = end_time + chrono::Duration::seconds(rest_time_val as i64);
 
         let msg = format!(
-            "Total: {} Elapsed: {}\n下课时间: {}\n下节上课: {}", 
-            class_time_val, 
+            "Total: {} Elapsed: {}\n下课时间: {}\n下节上课: {}",
+            class_time_val,
             elapsed_val,
             end_time.format("%Y-%m-%d %H:%M:%S"),
             next_start.format("%Y-%m-%d %H:%M:%S")
         );
-        self.ui.upgrade_in_event_loop(move |ui|{
-            
-            ui.set_ticker_info(TickerInfo {
-                class_time: class_time_val.to_string().into(),
-                elapsed_time: elapsed_val.to_string().into(),
-                rest_time: rest_time_val.to_string().into(),
-            });
-            ui.set_message(msg.into());
-        }).unwrap();
+        self.ui
+            .upgrade_in_event_loop(move |ui| {
+                ui.set_ticker_info(TickerInfo {
+                    class_time: class_time_val.to_string().into(),
+                    elapsed_time: elapsed_val.to_string().into(),
+                    rest_time: rest_time_val.to_string().into(),
+                });
+                ui.set_message(msg.into());
+            })
+            .unwrap();
     }
 
     fn handle_time_input<F>(&self, value: String, field: &str, f: F)
     where
-        F: FnOnce(& ClassTicker, u64)
+        F: FnOnce(&ClassTicker, u64),
     {
         println!("Handling time input for {}: {}", field, value);
         if let Ok(time) = u64::from_str(&value) {
@@ -82,16 +82,14 @@ impl TickerHandler {
 
     fn start_ui_update(self: &Arc<Self>) {
         let handler = Arc::clone(self);
-        thread::spawn(move || {
-            loop {
-                handler.update_ui();
-                thread::sleep(Duration::from_millis(100));
-            }
+        thread::spawn(move || loop {
+            handler.update_ui();
+            thread::sleep(Duration::from_millis(100));
         });
     }
 
     fn setup_callbacks(self: &Arc<Self>, ui: &AppWindow) {
-        let handle_tick = |handler: &Arc<Self>, action: fn(& ClassTicker), msg: &'static str| {
+        let handle_tick = |handler: &Arc<Self>, action: fn(&ClassTicker), msg: &'static str| {
             handler.ticker.stop();
             let h = Arc::clone(handler);
             h.show_message(msg);
@@ -106,13 +104,15 @@ impl TickerHandler {
         let h = Arc::clone(self);
         ui.on_set_class_time(move |value| {
             h.handle_time_input(value.to_string(), "课时", |t, time| {
-                *t.class_time.lock().unwrap() = time;
+                t.set_class_time(time);
             });
         });
 
         let h = Arc::clone(self);
         ui.on_set_elapsed_time(move |value| {
-            h.handle_time_input(value.to_string(), "已学时间", |t, time| t.set_elapsed(time));
+            h.handle_time_input(value.to_string(), "已学时间", |t, time| {
+                t.set_elapsed(time)
+            });
         });
 
         let h = Arc::clone(self);
@@ -124,7 +124,7 @@ impl TickerHandler {
 
         // ui.on_start_tick(handle_tick(self, ClassTicker::start_tick, "开始计时..."));
         let h = Arc::clone(self);
-        ui.on_start_tick(move ||{
+        ui.on_start_tick(move || {
             // self.ticker.lock().ok().map(|t|t.start_tick());
             let h = Arc::clone(&h);
             h.show_message("开始计时...");

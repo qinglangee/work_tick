@@ -1,9 +1,9 @@
-use std::time::{Duration, Instant};
-use std::thread;
-use rand::Rng;
-use chrono::{DateTime, Local, Duration as ChronoDuration};
 use anyhow::Result;
+use chrono::{DateTime, Duration as ChronoDuration, Local};
+use rand::Rng;
 use std::sync::Mutex;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use crate::audio_player::AudioPlayer;
 
@@ -15,8 +15,8 @@ pub mod success;
 /// fsdfa
 pub struct ClassTicker {
     running: Mutex<bool>,
-    pub class_time: Mutex<u64>,    // 默认 90 分钟（5400秒）
-    pub rest_time: Mutex<u64>,     // 默认休息 20 分钟（1200秒）
+    pub class_time: Mutex<u64>, // 默认 90 分钟（5400秒）
+    pub rest_time: Mutex<u64>,  // 默认休息 20 分钟（1200秒）
     pub elapsed_time: Mutex<u64>,
     start_time: Mutex<Instant>,
     pub end_time: Mutex<DateTime<Local>>,
@@ -38,8 +38,8 @@ impl ClassTicker {
 
     /// 以 100 毫秒为单位，分段睡眠，并在每个时间片更新 elapsed_time
     /// 在睡眠过程中，如果 elapsed_time 超过 class_time 或者 running 变为 false，则提前结束睡眠
-    /// 
-    fn sleep(& self, sleep_time: u64) {
+    ///
+    fn sleep(&self, sleep_time: u64) {
         let mut past_time = 0;
         let sleep_step = Duration::from_millis(100);
 
@@ -51,7 +51,8 @@ impl ClassTicker {
             past_time += 1;
 
             let total = *self.class_time.lock().unwrap() + *self.rest_time.lock().unwrap();
-            if elapsed_secs > total { // 设置很小的 total, 测试时候用的， 尽快结束 sleep
+            if elapsed_secs > total {
+                // 设置很小的 total, 测试时候用的， 尽快结束 sleep
                 break;
             }
             if !*self.running.lock().unwrap() {
@@ -60,13 +61,18 @@ impl ClassTicker {
 
             let rest = self.rest_time.lock().unwrap();
             if past_time % 20 == 0 {
-                println!("past time: {}, elapsed_time: {}, total: {}, rest: {}"
-                , past_time / 10, elapsed_secs, total, *rest);
+                println!(
+                    "past time: {}, elapsed_time: {}, total: {}, rest: {}",
+                    past_time / 10,
+                    elapsed_secs,
+                    total,
+                    *rest
+                );
             }
         }
     }
 
-    fn rand_sleep(& self, start: u64, end: u64, text: &str) {
+    fn rand_sleep(&self, start: u64, end: u64, text: &str) {
         let sleep_time = if end > start {
             rand::thread_rng().gen_range(start..=end)
         } else {
@@ -85,7 +91,7 @@ impl ClassTicker {
         Ok(())
     }
 
-    fn sleep_play(& self, file: &str, start: u64, end: u64, name: &str) {
+    fn sleep_play(&self, file: &str, start: u64, end: u64, name: &str) {
         self.rand_sleep(start, end, name);
         if let Err(e) = self.play_sound(file) {
             eprintln!("播放音频失败: {}, 错误: {}", file, e);
@@ -93,23 +99,30 @@ impl ClassTicker {
         println!("播放提示音 {} {}", name, file);
     }
 
-    pub fn init_tick(& self) {
+    pub fn init_tick(&self) {
         *self.start_time.lock().unwrap() = Instant::now();
         *self.elapsed_time.lock().unwrap() = 0;
     }
 
-    pub fn resume_tick(& self) {
+    pub fn resume_tick(&self) {
+        // 重启的时候要设置一下 elapsed_time, 要不然会接着停止前的计算
+        let elapsed = *self.elapsed_time.lock().unwrap();
+        self.set_elapsed(elapsed);
+
+        // 调用一下 stop, 防止是在运行中点的继续
+        self.stop();
+
         *self.running.lock().unwrap() = true;
         self.tick_while();
     }
 
-    pub fn start_tick(& self) {
+    pub fn start_tick(&self) {
         *self.running.lock().unwrap() = true;
         self.init_tick();
         self.tick_while();
     }
 
-    fn tick_while(& self) {
+    fn tick_while(&self) {
         let class_time = *self.class_time.lock().unwrap();
         let elapsed = *self.elapsed_time.lock().unwrap();
         let end = Local::now() + ChronoDuration::seconds((class_time - elapsed) as i64);
@@ -133,8 +146,8 @@ impl ClassTicker {
                 // 随机等待 3-5 分钟，播放提示音
                 self.sleep_play("alert.mp3", 180, 300, "提示音");
 
-                // 随机等待 10-15 秒，播放重新学习提示音
-                self.sleep_play("tick_study.mp3", 10, 15, "重新学习提示音");
+                // 随机等待 10-11 秒，播放重新学习提示音
+                self.sleep_play("tick_study.mp3", 10, 11, "重新学习提示音");
             }
 
             println!("播放休息提示音 rest.mp3");
@@ -160,22 +173,41 @@ impl ClassTicker {
             // 这种情况只在测试时出现， 所以就这样吧， 没什么问题
             self.sleep(rest_time);
             println!("休息时间 002: {} ", Local::now());
-            
+
             // 满足条件再初始化， 避免 stop 时初始化 elapsed_time, 就没法继续 Tick 了
-            if *self.running.lock().unwrap() && *self.elapsed_time.lock().unwrap() >= *self.class_time.lock().unwrap() {
+            if *self.running.lock().unwrap()
+                && *self.elapsed_time.lock().unwrap() >= *self.class_time.lock().unwrap()
+            {
                 self.init_tick();
             }
         }
         println!("本次课程循环结束。");
     }
 
-    pub fn stop(& self) {
+    pub fn stop(&self) {
         *self.running.lock().unwrap() = false;
         self.player.stop();
     }
 
-    pub fn set_elapsed(& self, elapsed_time: u64) {
+    pub fn set_class_time(&self, class_time: u64) {
+        *self.class_time.lock().unwrap() = class_time;
+
+        self.update_end_time();
+    }
+
+    pub fn set_elapsed(&self, elapsed_time: u64) {
+        if *self.class_time.lock().unwrap() <= elapsed_time {
+            return;
+        }
         *self.elapsed_time.lock().unwrap() = elapsed_time;
         *self.start_time.lock().unwrap() = Instant::now() - Duration::from_secs(elapsed_time);
+
+        self.update_end_time();
+    }
+
+    fn update_end_time(&self) {
+        let delta = (*self.class_time.lock().unwrap() - *self.elapsed_time.lock().unwrap()) as i64;
+        let end = Local::now() + ChronoDuration::seconds(delta);
+        *self.end_time.lock().unwrap() = end;
     }
 }
